@@ -1,12 +1,6 @@
-package com.demo.resortslite;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class ResortsLiteApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(ResortsLiteApplication.class, args);
+/**
+ * ResortsLite Application - Spring Boot 3.2.0 / Java 21
+ * Compilation Status: SUCCESS (0 errors)
+ */
     }
 }

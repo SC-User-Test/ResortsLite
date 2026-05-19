@@ -1,9 +1,8 @@
 package com.demo.resortslite;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,8 +10,11 @@ import java.util.Map;
 @RequestMapping("/api/bookings")
 public class BookingController {
 
-    @Autowired
-    private BookingService bookingService;
+    private final BookingService bookingService;
+
+    public BookingController(BookingService bookingService) {
+        this.bookingService = bookingService;
+    }
 
     // VIOLATION cr-java-0067 [Cloud Compatibility / Mandatory]: In-memory cache without TTL
     // breaks horizontal scaling — cache is instance-local, invisible to other EC2 instances
