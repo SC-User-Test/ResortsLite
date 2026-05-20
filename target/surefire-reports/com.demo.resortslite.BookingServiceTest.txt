@@ -1,0 +1,36 @@
+-------------------------------------------------------------------------------
+Test set: com.demo.resortslite.BookingServiceTest
+-------------------------------------------------------------------------------
+Tests run: 47, Failures: 0, Errors: 4, Skipped: 0, Time elapsed: 0.429 s <<< FAILURE! - in com.demo.resortslite.BookingServiceTest
+com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullSeason_handlesGracefully  Time elapsed: 0.008 s  <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "season" is null
+	at com.demo.resortslite.BookingService.calculateRoomPrice(BookingService.java:81)
+	at com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullSeason_handlesGracefully(BookingServiceTest.java:396)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.demo.resortslite.BookingServiceTest.isRoomAvailable_nullRoomType_returnsFalse  Time elapsed: 0.001 s  <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "roomType" is null
+	at com.demo.resortslite.BookingService.isRoomAvailable(BookingService.java:96)
+	at com.demo.resortslite.BookingServiceTest.isRoomAvailable_nullRoomType_returnsFalse(BookingServiceTest.java:472)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullLoyalty_handlesGracefully  Time elapsed: 0.001 s  <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "loyalty" is null
+	at com.demo.resortslite.BookingService.calculateRoomPrice(BookingService.java:83)
+	at com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullLoyalty_handlesGracefully(BookingServiceTest.java:406)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
+com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullRoomType_handlesGracefully  Time elapsed: 0.002 s  <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "roomType" is null
+	at com.demo.resortslite.BookingService.calculateRoomPrice(BookingService.java:76)
+	at com.demo.resortslite.BookingServiceTest.calculateRoomPrice_withNullRoomType_handlesGracefully(BookingServiceTest.java:386)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+
