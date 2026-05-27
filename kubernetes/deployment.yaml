@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resortslite
+  namespace: resortslite
+  labels:
+    app: resortslite
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: resortslite
+  template:
+    metadata:
+      labels:
+        app: resortslite
+        version: v1
+    spec:
+      containers:
+      - name: resortslite
+        image: {{IMAGE_URI}}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        # Application Configuration
+        - name: SERVER_PORT
+          value: "8080"
+        - name: SPRING_PROFILES_ACTIVE
+          value: "docker"
+        
+        # Database Configuration (H2 in-memory)
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:h2:mem:resortdb;DB_CLOSE_DELAY=-1"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "sa"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: ""
+        
+        # Redis Configuration (external service - replace with actual values)
+        - name: REDIS_HOST
+          value: "{{REDIS_HOST}}"
+        - name: REDIS_PORT
+          value: "{{REDIS_PORT}}"
+        - name: REDIS_PASSWORD
+          value: "{{REDIS_PASSWORD}}"
+        
+        # Google Cloud Storage Configuration (external service - replace with actual values)
+        - name: GCP_PROJECT_ID
+          value: "{{GCP_PROJECT_ID}}"
+        - name: GCP_CREDENTIALS_PATH
+          value: ""
+        - name: GCS_BUCKET_NAME
+          value: "{{GCS_BUCKET_NAME}}"
+        
+        # External Service Endpoints (replace with actual values)
+        - name: APP_PAYMENT_ENDPOINT
+          value: "{{APP_PAYMENT_ENDPOINT}}"
+        - name: APP_INVENTORY_ENDPOINT
+          value: "{{APP_INVENTORY_ENDPOINT}}"
+        - name: APP_NOTIFICATION_ENDPOINT
+          value: "{{APP_NOTIFICATION_ENDPOINT}}"
+        
+        # JVM Options
+        - name: JAVA_OPTS
+          value: "-Xmx512m -Xms256m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+        
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
+        
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+      
+      restartPolicy: Always

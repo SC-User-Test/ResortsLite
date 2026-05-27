@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  resortslite:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: resortslite:latest
+    container_name: resortslite-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Application Configuration
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: docker
+      
+      # Database Configuration (H2 in-memory)
+      SPRING_DATASOURCE_URL: jdbc:h2:mem:resortdb;DB_CLOSE_DELAY=-1
+      SPRING_DATASOURCE_USERNAME: sa
+      SPRING_DATASOURCE_PASSWORD: ""
+      
+      # Redis Configuration (external service)
+      REDIS_HOST: ${REDIS_HOST:-redis.example.com}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      
+      # Google Cloud Storage Configuration (external service)
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-your-gcp-project}
+      GCP_CREDENTIALS_PATH: ${GCP_CREDENTIALS_PATH:-}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-resortslite-files}
+      
+      # External Service Endpoints
+      APP_PAYMENT_ENDPOINT: ${APP_PAYMENT_ENDPOINT:-http://payment-svc:9090/charge}
+      APP_INVENTORY_ENDPOINT: ${APP_INVENTORY_ENDPOINT:-http://inventory-svc:8081/rooms}
+      APP_NOTIFICATION_ENDPOINT: ${APP_NOTIFICATION_ENDPOINT:-http://notify-svc:7070/send}
+      
+      # JVM Options
+      JAVA_OPTS: "-Xmx512m -Xms256m -XX:+UseContainerSupport"
+    volumes:
+      # Mount configuration files if needed
+      - ./config:/app/config:ro
+    networks:
+      - app-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  app-network:
+    driver: bridge
