@@ -2,6 +2,7 @@ package com.demo.resortslite;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
@@ -15,6 +16,9 @@ public class BookingService {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private InventoryServiceClient inventoryServiceClient;
+
     // VIOLATION [Security Health / Critical]: Hardcoded database credentials in source code.
     // If this repo is pushed to GitHub (even private), credentials are permanently exposed
     // in git history. AWS Secrets Manager or Parameter Store must be used instead.
@@ -22,10 +26,10 @@ public class BookingService {
     private static final String DB_USER = "admin";                         // sec-cred-001
     private static final String DB_PASS = "Resort$Pass#2019!";             // sec-cred-001
 
-    // VIOLATION cr-java-0021 [Cloud Compatibility / Mandatory]: Hardcoded infrastructure
-    // hostname. Cloud IP addresses and service endpoints change on restart, redeployment,
-    // or scaling events. Must be externalised to environment variables / Parameter Store.
-    private static final String PAYMENT_API = "http://10.0.1.45:9090/payments/charge"; // cr-java-0021, cr-java-0088
+    // FIXED blocker-12 (cz-java-0062): Replaced hardcoded IP address with environment variable
+    // Payment API endpoint now externalized for flexible container deployment
+    @Value("${app.payment.endpoint}")
+    private String paymentApiEndpoint;
 
     public Map<String, Object> createBooking(String guestName, String roomType,
                                               String checkIn, String checkOut) {
@@ -89,18 +93,14 @@ public class BookingService {
     }
 
     public boolean isRoomAvailable(String roomType) {
-        // VIOLATION [Code Sustainability / Medium]: Duplicated validation logic.
-        // Same room type validation is repeated here and in calculateRoomPrice.
-        // Should be extracted to a shared RoomType enum or validator.
-        if (!roomType.equals("STANDARD") && !roomType.equals("DELUXE") // dup-logic-001
-                && !roomType.equals("SUITE") && !roomType.equals("VILLA")) { // dup-logic-001
-            return false;
-        }
-        return true;
+        // FIXED blocker-10 (cz-java-0082): Using loosely-coupled service interface
+        // Direct validation replaced with InventoryServiceClient for microservices architecture
+        return inventoryServiceClient.checkRoomAvailability(roomType);
     }
 
     public String generateReport(String month) {
-        return "Report generation triggered for: " + month + " via " + PAYMENT_API;
+        // FIXED blocker-12 (cz-java-0062): Using externalized payment endpoint
+        return "Report generation triggered for: " + month + " via " + paymentApiEndpoint;
     }
 
     private String md5Hash(String input) { // sec-weak-hash-001
