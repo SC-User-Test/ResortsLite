@@ -1,0 +1,12 @@
+-------------------------------------------------------------------------------
+Test set: com.demo.resortslite.BookingServiceTest
+-------------------------------------------------------------------------------
+Tests run: 42, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 0.552 s <<< FAILURE! -- in com.demo.resortslite.BookingServiceTest
+com.demo.resortslite.BookingServiceTest.isRoomAvailable_forNullRoomType_returnsFalse -- Time elapsed: 0.440 s <<< ERROR!
+java.lang.NullPointerException: Cannot invoke "String.equals(Object)" because "roomType" is null
+	at com.demo.resortslite.BookingService.isRoomAvailable(BookingService.java:96)
+	at com.demo.resortslite.BookingServiceTest.isRoomAvailable_forNullRoomType_returnsFalse(BookingServiceTest.java:439)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:569)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1511)
+
