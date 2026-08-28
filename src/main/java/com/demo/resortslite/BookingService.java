@@ -2,6 +2,7 @@ package com.demo.resortslite;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
@@ -11,6 +12,37 @@ import java.util.UUID;
 
 @Service
 public class BookingService {
+
+    /**
+     * cz-java-0062 / cz-java-0082 — Hardcoded IP Address Removed via ECS Service Connect
+     * Rule: cz-java-0062 (Hardcoded IP Addresses) | cz-java-0082 (ECS Service Connect)
+     *
+     * PROBLEM  : The original code contained a hardcoded inter-service URL
+     *            "http://10.0.1.45:9090/payments/charge" (line 102 original) stored as a
+     *            static final constant. Hardcoded IP addresses and ports create tight
+     *            coupling between services, preventing independent deployment, scaling,
+     *            and service discovery in a containerised microservices architecture on
+     *            ECS Fargate. IP addresses change on every task restart or redeployment.
+     *
+     * FIX      : The URL is now resolved at runtime from the PAYMENT_SERVICE_URL environment
+     *            variable, injected via the ECS Task Definition. ECS Service Connect provides
+     *            automatic service discovery, mTLS, and traffic observability between Fargate
+     *            services without hardcoded IP addresses or ports.
+     *
+     * ECS Service Connect configuration required (ECS Service definition):
+     *   1. Enable Service Connect on the ECS Service for the "resortslite" namespace.
+     *   2. Define a Service Connect client alias for the payment service:
+     *        { "port": 9090, "dnsName": "payment-service" }
+     *   3. Set the environment variable in the ECS Task Definition:
+     *        PAYMENT_SERVICE_URL=http://payment-service:9090/payments/charge
+     *      (ECS Service Connect resolves "payment-service" via its internal DNS.)
+     *
+     * Occurrence fixed (cz-java-0082):
+     * Occurrences fixed (cz-java-0062, cz-java-0082):
+     *   - Line 28 (source): private static final String PAYMENT_API = "http://10.0.1.45:9090/payments/charge"
+     *                        → replaced with @Value("${PAYMENT_SERVICE_URL}") instance field
+     *   - Hardcoded IP 10.0.1.45 removed; resolved via ECS Service Connect DNS (cz-java-0062)
+     */
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -22,10 +54,16 @@ public class BookingService {
     private static final String DB_USER = "admin";                         // sec-cred-001
     private static final String DB_PASS = "Resort$Pass#2019!";             // sec-cred-001
 
-    // VIOLATION cr-java-0021 [Cloud Compatibility / Mandatory]: Hardcoded infrastructure
-    // hostname. Cloud IP addresses and service endpoints change on restart, redeployment,
-    // or scaling events. Must be externalised to environment variables / Parameter Store.
-    private static final String PAYMENT_API = "http://10.0.1.45:9090/payments/charge"; // cr-java-0021, cr-java-0088
+    /**
+     * cz-java-0062 FIX: Hardcoded IP address (10.0.1.45) replaced with environment variable.
+     * cz-java-0082 FIX: Payment service URL resolved via ECS Service Connect.
+     * Set PAYMENT_SERVICE_URL in the ECS Task Definition environment variables.
+     * ECS Service Connect resolves the logical service name to the correct Fargate
+     * task endpoint automatically, enabling mTLS and traffic observability.
+     * Default value supports local development without ECS Service Connect.
+     */
+    @Value("${PAYMENT_SERVICE_URL:http://payment-service:9090/payments/charge}")
+    private String paymentServiceUrl;
 
     public Map<String, Object> createBooking(String guestName, String roomType,
                                               String checkIn, String checkOut) {
@@ -100,7 +138,7 @@ public class BookingService {
     }
 
     public String generateReport(String month) {
-        return "Report generation triggered for: " + month + " via " + PAYMENT_API;
+        return "Report generation triggered for: " + month + " via " + paymentServiceUrl;
     }
 
     private String md5Hash(String input) { // sec-weak-hash-001

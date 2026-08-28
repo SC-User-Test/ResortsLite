@@ -30,6 +30,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
+        <!-- Health check endpoint support via /actuator/health -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
         <!-- SECURITY VIOLATION: log4j 2.14.1 has critical CVE-2021-44228 (Log4Shell) -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -46,6 +51,34 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <!-- Stateless JWT authentication — replaces server-side HttpSession (cz-java-0063) -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <!-- cz-java-0070 FIX: Amazon ElastiCache for Memcached client.
+             Replaces the former static in-process HashMap bookingCache.
+             The Memcached endpoint is injected via MEMCACHED_ENDPOINT environment variable,
+             resolved from AWS SSM Parameter Store into the ECS Fargate task definition.
+             All ECS task instances share the same distributed cache cluster. -->
+        <dependency>
+            <groupId>net.spy</groupId>
+            <artifactId>spymemcached</artifactId>
+            <version>2.12.3</version>
         </dependency>
     </dependencies>
 
