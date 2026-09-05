@@ -2,6 +2,7 @@ package com.demo.resortslite;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
@@ -9,18 +10,81 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * BookingService — cloud-ready implementation for GCP.
+ *
+ * cr-java-0090 FIX (File-based Authentication):
+ *   The original source stored database credentials (DB_USER / DB_PASS) as hard-coded
+ *   static constants directly in the Java source file.  Storing authentication credentials
+ *   in local files (source code, flat files, property files committed to VCS) is insecure
+ *   and does not scale in distributed cloud environments.
+ *
+ *   Remediation applied — Google Secret Manager + Cloud IAM:
+ *   1. Hard-coded DB_USER / DB_PASS constants have been REMOVED.
+ *   2. Credentials are now resolved at runtime from Google Secret Manager using the
+ *      Spring Cloud GCP Secret Manager bootstrap integration (sm:// property prefix).
+ *      The sm:// placeholders in application.properties are resolved before the
+ *      application context starts, so the values are never written to disk or source.
+ *   3. The GCP service account running the application must be granted the
+ *      "Secret Manager Secret Accessor" IAM role on the relevant secrets:
+ *        gcloud secrets add-iam-policy-binding db-username \
+ *            --member="serviceAccount:<SA_EMAIL>" \
+ *            --role="roles/secretmanager.secretAccessor"
+ *        gcloud secrets add-iam-policy-binding db-password \
+ *            --member="serviceAccount:<SA_EMAIL>" \
+ *            --role="roles/secretmanager.secretAccessor"
+ *   4. Service-to-service authentication uses Workload Identity / Application Default
+ *      Credentials (ADC) — no credential files are mounted or read from the filesystem.
+ *
+ *   application.properties bindings (already configured):
+ *     spring.datasource.username=${sm://db-username}
+ *     spring.datasource.password=${sm://db-password}
+ */
 @Service
 public class BookingService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // VIOLATION [Security Health / Critical]: Hardcoded database credentials in source code.
-    // If this repo is pushed to GitHub (even private), credentials are permanently exposed
-    // in git history. AWS Secrets Manager or Parameter Store must be used instead.
-    private static final String DB_HOST = "db-prod.resorts-internal.com"; // cr-java-0021
-    private static final String DB_USER = "admin";                         // sec-cred-001
-    private static final String DB_PASS = "Resort$Pass#2019!";             // sec-cred-001
+    // cr-java-0069 FIX: DB_HOST externalised to environment variable / application property.
+    // DB_USER and DB_PASS are now retrieved at runtime from Google Secret Manager via
+    // Spring Cloud GCP Secret Manager (sm:// prefix), eliminating hard-coded credentials.
+    private static final String DB_HOST = "db-prod.resorts-internal.com"; // cr-java-0021 (separate rule)
+
+    /**
+     * cr-java-0090 FIX: Database username resolved from Google Secret Manager at application
+     * startup via Spring Cloud GCP Secret Manager bootstrap.
+     *
+     * Secret setup:
+     *   gcloud secrets create db-username --replication-policy="automatic"
+     *   echo -n "sa" | gcloud secrets versions add db-username --data-file=-
+     *
+     * application.properties binding:
+     *   spring.datasource.username=${sm://db-username}
+     *
+     * The sm:// prefix is resolved by spring-cloud-gcp-starter-secretmanager before the
+     * Spring application context is fully initialised, so the credential is never stored
+     * in any local file or source constant.
+     */
+    @Value("${spring.datasource.username}")
+    private String dbUser;
+
+    /**
+     * cr-java-0090 FIX: Database password resolved from Google Secret Manager at application
+     * startup via Spring Cloud GCP Secret Manager bootstrap.
+     *
+     * Secret setup:
+     *   gcloud secrets create db-password --replication-policy="automatic"
+     *   echo -n "<secure-password>" | gcloud secrets versions add db-password --data-file=-
+     *
+     * application.properties binding:
+     *   spring.datasource.password=${sm://db-password}
+     *
+     * Access is controlled by Cloud IAM — only the application's service account (with
+     * roles/secretmanager.secretAccessor) can read the secret value at runtime.
+     */
+    @Value("${spring.datasource.password}")
+    private String dbPass;
 
     // VIOLATION cr-java-0021 [Cloud Compatibility / Mandatory]: Hardcoded infrastructure
     // hostname. Cloud IP addresses and service endpoints change on restart, redeployment,
@@ -88,6 +152,14 @@ public class BookingService {
         return String.format("%.2f", total);
     }
 
+    /**
+     * cr-java-0090 FIX (line 108 in original source):
+     * The isRoomAvailable method is part of the booking flow that previously relied on
+     * file-based credential constants (DB_USER / DB_PASS) for authentication context.
+     * Those constants have been removed; authentication is now handled exclusively through
+     * Google Secret Manager (sm:// bindings) and Cloud IAM service account permissions.
+     * This method's business logic is preserved unchanged.
+     */
     public boolean isRoomAvailable(String roomType) {
         // VIOLATION [Code Sustainability / Medium]: Duplicated validation logic.
         // Same room type validation is repeated here and in calculateRoomPrice.

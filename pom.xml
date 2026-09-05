@@ -21,6 +21,19 @@
         <java.version>1.8</java.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud GCP BOM — manages versions for all Spring Cloud GCP modules -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>3.7.8</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -46,6 +59,36 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <!-- GCS SDK: replaces hard-coded file-system paths (cr-java-0061) -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-storage</artifactId>
+            <version>2.29.1</version>
+        </dependency>
+        <!-- cr-java-0069 FIX: Spring Cloud GCP Secret Manager — resolves sm:// property
+             placeholders at runtime from Google Secret Manager, replacing hard-coded
+             DB_USER and DB_PASS constants in BookingService. -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-secretmanager</artifactId>
+        </dependency>
+        <!-- cr-java-0065 FIX: Spring Session backed by Redis (Google Cloud Memorystore).
+             Replaces HttpSession-based state storage with a centralised Redis store so
+             that all application instances remain stateless and can be scaled horizontally
+             without server affinity. Spring Session auto-configures when
+             spring.session.store-type=redis is set in application.properties. -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+        </dependency>
+        <!-- Spring Boot Redis starter — provides RedisTemplate and auto-configuration
+             for connecting to Google Cloud Memorystore for Redis. Connection details
+             are supplied via REDIS_HOST / REDIS_PORT environment variables (or
+             spring.redis.host / spring.redis.port in application.properties). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
     </dependencies>
 
