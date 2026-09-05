@@ -2,25 +2,59 @@ package com.demo.resortslite;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * BookingService — cloud-ready implementation.
+ *
+ * cr-java-0090 FIX (File-based Authentication → GCP Secret Manager + Cloud IAM):
+ *   All authentication credentials (DB host, DB username, DB password) that were
+ *   previously hard-coded as static constants (and therefore effectively stored in
+ *   the source-code "file") are now injected at runtime via Spring's @Value mechanism
+ *   backed by the Spring Cloud GCP Secret Manager property source (sm:// prefix).
+ *   Secrets are never present in source code, compiled artefacts, or container image
+ *   layers.  The GCP service account running the workload must be granted the
+ *   "Secret Manager Secret Accessor" IAM role on each secret, providing Cloud IAM
+ *   service-to-service authentication without any local credential files.
+ *
+ *   Secrets to create in GCP Secret Manager before deployment:
+ *     gcloud secrets create resorts-lite-db-host     --replication-policy="automatic"
+ *     gcloud secrets create resorts-lite-db-username --replication-policy="automatic"
+ *     gcloud secrets create resorts-lite-db-password --replication-policy="automatic"
+ *
+ *   Required IAM binding (per secret, for the workload service account):
+ *     gcloud secrets add-iam-policy-binding resorts-lite-db-host \
+ *       --member="serviceAccount:<SA>@<PROJECT>.iam.gserviceaccount.com" \
+ *       --role="roles/secretmanager.secretAccessor"
+ */
 @Service
 public class BookingService {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    // VIOLATION [Security Health / Critical]: Hardcoded database credentials in source code.
-    // If this repo is pushed to GitHub (even private), credentials are permanently exposed
-    // in git history. AWS Secrets Manager or Parameter Store must be used instead.
-    private static final String DB_HOST = "db-prod.resorts-internal.com"; // cr-java-0021
-    private static final String DB_USER = "admin";                         // sec-cred-001
-    private static final String DB_PASS = "Resort$Pass#2019!";             // sec-cred-001
+    // cr-java-0090 FIX: DB host is no longer a hard-coded static constant.
+    // It is resolved at runtime from GCP Secret Manager via the sm:// property source,
+    // so the value is never stored in any local file or source artefact.
+    @Value("${sm://resorts-lite-db-host}")
+    private String dbHost;
+
+    // cr-java-0090 FIX: DB credentials resolved from GCP Secret Manager at runtime.
+    // The workload's GCP service account must hold roles/secretmanager.secretAccessor
+    // on these secrets — Cloud IAM enforces service-to-service authentication without
+    // any local credential files.
+    @Value("${app.db.username}")
+    private String dbUser;
+
+    @Value("${app.db.password}")
+    private String dbPass;
 
     // VIOLATION cr-java-0021 [Cloud Compatibility / Mandatory]: Hardcoded infrastructure
     // hostname. Cloud IP addresses and service endpoints change on restart, redeployment,
@@ -50,7 +84,9 @@ public class BookingService {
         booking.put("checkIn", checkIn);
         booking.put("checkOut", checkOut);
         booking.put("confirmationCode", confirmCode);
-        booking.put("dbHost", DB_HOST);
+        // cr-java-0090 FIX: dbHost is now injected from GCP Secret Manager — no longer
+        // a hard-coded static constant stored in the source file.
+        booking.put("dbHost", dbHost);
         return booking;
     }
 

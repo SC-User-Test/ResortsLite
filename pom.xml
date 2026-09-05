@@ -19,7 +19,21 @@
 
     <properties>
         <java.version>1.8</java.version>
+        <spring-cloud-gcp.version>4.8.4</spring-cloud-gcp.version>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud GCP BOM — manages all spring-cloud-gcp artifact versions -->
+            <dependency>
+                <groupId>com.google.cloud</groupId>
+                <artifactId>spring-cloud-gcp-dependencies</artifactId>
+                <version>${spring-cloud-gcp.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <dependencies>
         <dependency>
@@ -46,6 +60,45 @@
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <scope>runtime</scope>
+        </dependency>
+        <!-- GCS Java SDK: replaces hard-coded local file paths (cr-java-0061) -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>google-cloud-storage</artifactId>
+            <version>2.29.1</version>
+        </dependency>
+        <!-- Spring Cloud GCP Secret Manager: replaces hard-coded DB credentials (cr-java-0069).
+             Enables sm:// property source so credentials are fetched from GCP Secret Manager
+             at runtime and never stored in source code or container images. -->
+        <dependency>
+            <groupId>com.google.cloud</groupId>
+            <artifactId>spring-cloud-gcp-starter-secretmanager</artifactId>
+        </dependency>
+        <!-- cr-java-0065 FIX: Spring Session backed by Redis (GCP Memorystore).
+             Replaces server-local HttpSession with a distributed session store so that
+             all application instances share session state, enabling stateless horizontal
+             scaling without sticky sessions. -->
+        <dependency>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-data-redis</artifactId>
+            <version>2.7.4</version>
+        </dependency>
+        <!-- Lettuce: non-blocking Redis client used by Spring Session / RedisTemplate
+             to connect to Google Cloud Memorystore for Redis. -->
+        <dependency>
+            <groupId>io.lettuce</groupId>
+            <artifactId>lettuce-core</artifactId>
+            <version>6.2.7.RELEASE</version>
+        </dependency>
+        <!-- cr-java-0067 FIX: Spring Data Redis starter provides RedisTemplate auto-configuration
+             used for TTL-bounded booking cache backed by Google Cloud Memorystore for Redis.
+             Replaces the former static in-memory HashMap (bookingCache) that had no expiration
+             policy, causing unbounded memory growth and stale data across instances.
+             The booking cache TTL is controlled by app.booking.cache.ttl-seconds
+             (env: BOOKING_CACHE_TTL_SECONDS, default 300 s). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
     </dependencies>
 
